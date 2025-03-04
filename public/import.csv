@@ -1,0 +1,6 @@
+id,title,price,location,bedrooms,bathrooms,image_url,created_at
+4a5f9f7c-12d7-4c1a-9f6c-1d3f678b2a11,Beautiful Home,R1500000,Cape Town,3,2,https://example.com/property1.jpg,2025-03-04T12:00:00Z
+b7a82f17-8c33-4e4e-bb47-3db9f6eab1f2,Modern Apartment,R850000,Johannesburg,2,1,https://example.com/property2.jpg,2025-03-04T12:01:00Z
+c1f9d10a-1b6d-489b-ae64-7c9bfae345b3,Family House,R2300000,Pretoria,4,3,https://example.com/property3.jpg,2025-03-04T12:02:00Z
+d6e5a712-57a7-4c91-92f7-0a8a9a76a4d4,Cozy Cottage,R750000,Durban,2,1,https://example.com/property4.jpg,2025-03-04T12:03:00Z
+e8d1a24c-965b-4d8e-8478-30c2e1d49e5f,Luxury Villa,R5800000,Stellenbosch,6,5,https://example.com/property5.jpg,2025-03-04T12:04:00Z
