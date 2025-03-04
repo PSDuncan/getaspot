@@ -1,19 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation"; // useSearchParams for query parameters
+import { useRouter } from "next/router";  // Use router for dynamic parameters
 import { supabase } from "@/app/lib/supabase";
 
 const PropertyDetailPage = () => {
   const [property, setProperty] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const searchParams = useSearchParams();
-  const id = searchParams.get("id"); // Get the 'id' query parameter from the URL
+  const router = useRouter();
+  const { id } = router.query; // Access dynamic route parameter `id`
 
   useEffect(() => {
-    if (!id) return; // If no id, do nothing
+    if (!id) return; // Exit early if id isn't available
 
     const fetchProperty = async () => {
       setLoading(true);
@@ -36,7 +35,7 @@ const PropertyDetailPage = () => {
     };
 
     fetchProperty();
-  }, [id]); // Trigger fetch when id changes
+  }, [id]); // Trigger when `id` changes
 
   if (loading) {
     return <p>Loading...</p>;
@@ -51,36 +50,11 @@ const PropertyDetailPage = () => {
   }
 
   return (
-    <main className="p-6">
-      <h1 className="text-3xl font-bold mb-4">{property.title}</h1>
-      <img
-        src={property.image_url}
-        alt={property.title}
-        className="w-full h-64 object-cover mb-4"
-      />
-      <div className="mb-4">
-        <span className="text-xl font-semibold">Price: </span>
-        <span className="text-blue-600">
-          R{property.price.toLocaleString()}
-        </span>
-      </div>
-      <div className="mb-4">
-        <span className="font-semibold">Location: </span>
-        <span>{property.location}</span>
-      </div>
-      <div className="mb-4">
-        <span className="font-semibold">Bedrooms: </span>
-        <span>{property.bedrooms}</span>
-        <span className="ml-4 font-semibold">Bathrooms: </span>
-        <span>{property.bathrooms}</span>
-      </div>
-      {property.description && (
-        <div className="mb-4">
-          <span className="font-semibold">Description: </span>
-          <p>{property.description}</p>
-        </div>
-      )}
-    </main>
+    <div>
+      <h1>{property.title}</h1>
+      <img src={property.image_url} alt={property.title} />
+      <p>{property.description}</p>
+    </div>
   );
 };
 
