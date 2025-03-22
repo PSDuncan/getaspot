@@ -1,85 +1,49 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/superbase';
-import Link from 'next/link';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/superbase'; 
 
-export default function DashboardPage() {
-  const [properties, setProperties] = useState<any[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isAgent, setIsAgent] = useState(false);
-  const [hasAgency, setHasAgency] = useState(false);
+export default function DashboardRedirectPage() {
+  const router = useRouter();
 
   useEffect(() => {
-    const loadDashboard = async () => {
-      const session = await supabase.auth.getUser();
-      const user = session.data?.user;
-      if (!user) return;
+    const loadUser = async () => {
+      const { data: session } = await supabase.auth.getUser();
+      const user = session?.user;
+      if (!user) return router.push('/login');
 
-      setUserId(user.id);
+      const userId = user.id;
 
-      const agentRes = await supabase
+      if (user.email === 'admin@getaspot.co.za') {
+        return router.push('/admin'); // Super admin email check (can change later)
+      }
+
+      const { data: agentData } = await supabase
         .from('agents')
         .select('id, agency_id')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
-      const agentId = agentRes?.data?.id;
-      const agencyId = agentRes?.data?.agency_id;
+      if (agentData?.id && agentData?.agency_id) {
+        router.push('/dashboard/agent');
+      } else {
+        const { data: agency } = await supabase
+          .from('agencies')
+          .select('id')
+          .eq('email', user.email) // or check agency.user_id === auth.uid() if applicable
+          .maybeSingle();
 
-      setIsAgent(!!agentId);
-      setHasAgency(!!agencyId);
-
-      const { data } = await supabase
-        .from('properties')
-        .select('*')
-        .or(`user_id.eq.${user.id},agent_id.eq.${agentId}`);
-
-      setProperties(data || []);
+        if (agency?.id) {
+          router.push('/dashboard/agency');
+        } else {
+          router.push('/dashboard/owner');
+        }
+      }
     };
 
-    loadDashboard();
-  }, []);
+    loadUser();
+  }, [router]);
 
-  return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-
-      <div className="flex gap-4 mb-4">
-        <Link href="/add-property" className="bg-blue-600 text-white px-4 py-2 rounded">
-          Add Property
-        </Link>
-        {!isAgent && (
-          <Link href="/register-agency" className="bg-green-600 text-white px-4 py-2 rounded">
-            Register an Agency
-          </Link>
-        )}
-        {isAgent && hasAgency && (
-          <Link href="/dashboard/agency" className="bg-gray-200 px-4 py-2 rounded">
-            Go to Agency Dashboard
-          </Link>
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Your <a href="/dashboard/properties">Properties</a></h2>
-        <div className="flex gap-4 mb-4">
-        <Link href="/dashboard/properties" className="bg-blue-600 text-white px-4 py-2 rounded">
-          Manage Properties
-        </Link>
-        </div>
-        {properties.length === 0 ? (
-          <p className="text-gray-600">You have no properties listed yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {properties.map((p) => (
-              <li key={p.id} className="border p-4 rounded">
-                <strong>{p.title}</strong> – R{p.price} – {p.location}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  );
+  return <p className="p-6">Redirecting to your dashboard...</p>;
 }

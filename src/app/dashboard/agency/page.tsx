@@ -4,111 +4,85 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/superbase';
 import Link from 'next/link';
 
-type Agent = { id: string; user_id: string; license_number?: string; users?: { full_name: string; email: string } };
-type Property = { id: string; title: string; price: number; location: string };
-
 export default function AgencyDashboard() {
-    const [loading, setLoading] = useState(true);
-    const [agencyId, setAgencyId] = useState<string | null>(null);
-    const [agents, setAgents] = useState<Agent[]>([]);
-    const [properties, setProperties] = useState<Property[]>([]);
+  const [agency, setAgency] = useState<any>(null);
+  const [agents, setAgents] = useState<any[]>([]);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchDashboard = async () => {
-            const user = (await supabase.auth.getUser()).data?.user;
-            if (!user) return;
+  useEffect(() => {
+    const load = async () => {
+      const { data: session } = await supabase.auth.getUser();
+      const user = session?.user;
+      if (!user) return;
 
-            const agentRes = await supabase.from('agents').select('agency_id').eq('user_id', user.id).single();
-            const agency_id = agentRes.data?.agency_id;
-            if (!agency_id) return;
+      const { data: agencyData } = await supabase
+        .from('agencies')
+        .select('*')
+        .eq('email', user.email)
+        .maybeSingle();
 
-            setAgencyId(agency_id);
+      if (!agencyData) return;
 
-            const agentsRes = await supabase
-                .from('agents')
-                .select('id, user_id, license_number, users(full_name, email)')
-                .eq('agency_id', agency_id);
+      setAgency(agencyData);
 
-            const propertiesRes = await supabase
-                .from('properties')
-                .select('*')
-                .eq('agency_id', agency_id);
+      const agentRes = await supabase
+        .from('agents')
+        .select('*, users(email)')
+        .eq('agency_id', agencyData.id);
 
-            setAgents(agentsRes.data || []);
-            setProperties(propertiesRes.data || []);
-            setLoading(false);
-        };
+      setAgents(agentRes.data || []);
 
-        fetchDashboard();
-    }, []);
+      const props = await supabase
+        .from('properties')
+        .select('*')
+        .eq('agency_id', agencyData.id);
 
-    if (loading) return <div className="p-6">Loading agency dashboard...</div>;
+      setProperties(props.data || []);
+      setLoading(false);
+    };
 
-    return (
-        <div className="p-6 space-y-6">
-            <h1 className="text-2xl font-bold">Agency Dashboard</h1>
-            <Link href="/dashboard/agency/settings" className="text-blue-600 underline">Edit Agency Settings</Link>
+    load();
+  }, []);
 
-
-            <div>
-                <h2 className="text-xl font-semibold mb-2">Agents</h2>
-                <ul className="space-y-1">
-                    {agents.map((agent) => (
-                        <li key={agent.id} className="border p-2 rounded">
-                            {agent.users?.full_name} — {agent.users?.email}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            <div>
-                <h2>Add Agents</h2>
-                <div className="mt-6">
-                    <h2 className="text-xl font-semibold mb-2">Add Agent by Email</h2>
-                    <form
-                        onSubmit={async (e) => {
-                            e.preventDefault();
-                            const form = e.currentTarget as HTMLFormElement;
-                            const email = (form.email as HTMLInputElement).value;
-
-                            const userRes = await supabase.from('users').select('id').eq('email', email).single();
-                            if (!userRes.data?.id) {
-                                alert('No user found with that email. Ask them to sign up first.');
-                                return;
-                            }
-
-                            const insertRes = await supabase.from('agents').insert({
-                                user_id: userRes.data.id,
-                                agency_id: agencyId,
-                            });
-
-                            if (insertRes.error) {
-                                alert('Failed to add agent: ' + insertRes.error.message);
-                            } else {
-                                alert('Agent added!');
-                                location.reload();
-                            }
-                        }}
-                        className="space-y-2"
-                    >
-                        <input name="email" type="email" placeholder="Agent's Email" required className="border p-2 w-full" />
-                        <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">
-                            Add Agent
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div>
-                <h2 className="text-xl font-semibold mt-6 mb-2">Properties</h2>
-                <ul className="space-y-1">
-                    {properties.map((p) => (
-                        <li key={p.id} className="border p-2 rounded">
-                            {p.title} - R{p.price} ({p.location})
-                        </li>
-                    ))}
-                </ul>
-            </div>
+  return (
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Agency Dashboard</h1>
+      {agency && (
+        <div className="bg-white p-4 border rounded shadow">
+          <h2 className="text-lg font-semibold">Agency: {agency.name}</h2>
+          <p className="text-sm text-gray-600">{agency.email}</p>
+          <Link href="/dashboard/agency/edit" className="text-blue-600 text-sm hover:underline mt-2 inline-block">Edit Agency Profile</Link>
         </div>
-    );
+      )}
+
+      <div>
+        <h2 className="text-xl font-semibold">Agents</h2>
+        {agents.length === 0 ? (
+          <p>No agents yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {agents.map((a) => (
+              <li key={a.id} className="border p-2 rounded">{a.users?.email || 'Unknown'}</li>
+            ))}
+          </ul>
+        )}
+        <Link href="/dashboard/agency/invite" className="mt-4 inline-block text-sm bg-blue-600 text-white px-4 py-2 rounded">
+          Invite Agent
+        </Link>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold mt-6">Agency Properties</h2>
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {properties.map((p) => (
+            <li key={p.id} className="border rounded p-4 shadow bg-white">
+              <h3 className="font-semibold">{p.title}</h3>
+              <p className="text-sm text-gray-600">R{p.price} - {p.location}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
 }
