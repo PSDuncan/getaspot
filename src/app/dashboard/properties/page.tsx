@@ -1,91 +1,98 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/superbase';
+import { supabase } from '@/lib/superbase'; 
 import Link from 'next/link';
 
-type Property = {
-  id: string;
-  title: string;
-  price: number;
-  location: string;
-};
-
-export default function UserPropertiesPage() {
-  const [properties, setProperties] = useState<Property[]>([]);
+export default function ManagePropertiesPage() {
+  const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserProperties = async () => {
+    const loadProperties = async () => {
       const { data: session } = await supabase.auth.getUser();
-      const userId = session?.user?.id;
-      if (!userId) return;
-  
-      // 1. Check if the user is an agent
+      const user = session?.user;
+      if (!user) return;
+
       const { data: agentData } = await supabase
         .from('agents')
         .select('id')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .maybeSingle();
-  
+
+      const userId = user.id;
       const agentId = agentData?.id;
-  
-      // 2. Fetch properties where user_id = current user OR agent_id = current agent
-      const { data: propertiesData, error } = await supabase
+
+      const { data, error } = await supabase
         .from('properties')
         .select('*')
-        .or(`user_id.eq.${userId},agent_id.eq.${agentId}`);
-  
-      if (error) {
-        console.error('Failed to fetch properties:', error.message);
-        return;
-      }
-  
-      setProperties(propertiesData || []);
+        .or(`user_id.eq.${userId},agent_id.eq.${agentId}`)
+        .order('created_at', { ascending: false });
+
+      if (!error) setProperties(data || []);
       setLoading(false);
     };
-  
-    fetchUserProperties();
+
+    loadProperties();
   }, []);
-  
+
   const handleDelete = async (id: string) => {
-    const confirmed = confirm('Are you sure you want to delete this property?');
-    if (!confirmed) return;
-  
+    const confirm = window.confirm('Delete this property?');
+    if (!confirm) return;
+
     const { error } = await supabase.from('properties').delete().eq('id', id);
-    if (error) {
+    if (!error) {
+      setProperties((prev) => prev.filter((p) => p.id !== id));
+    } else {
       alert('Failed to delete: ' + error.message);
-      return;
     }
-  
-    setProperties((prev) => prev.filter((p) => p.id !== id));
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">My Properties</h1>
-      {loading && <p>Loading...</p>}
-      <ul className="space-y-2">
-        {properties.map((p) => (
-          <li key={p.id} className="border p-4 rounded">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="font-semibold">{p.title}</p>
-                <p className="text-sm text-gray-600">R{p.price} — {p.location}</p>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">My Properties</h1>
+        <Link href="/add-property" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          Add Property
+        </Link>
+      </div>
+
+      {loading ? (
+        <p>Loading...</p>
+      ) : properties.length === 0 ? (
+        <p>No properties found.</p>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {properties.map((p) => (
+            <li key={p.id} className="border rounded-lg p-4 bg-white shadow">
+              {p.image_url && (
+                <img src={p.image_url} alt={p.title} className="h-40 w-full object-cover rounded mb-2" />
+              )}
+              <h2 className="font-bold text-lg">{p.title}</h2>
+              <p className="text-sm text-gray-600">{p.location}</p>
+              <p className="text-sm text-gray-700">R{p.price?.toLocaleString()}</p>
+              <div className="text-xs text-gray-500 mt-2">
+                {p.bedrooms} bed • {p.bathrooms} bath • {p.type}
               </div>
-              <div className="flex gap-2">
-                <Link href={`/dashboard/properties/${p.id}/edit`} className="text-blue-600 hover:underline">
+
+              <div className="flex justify-between mt-4">
+                <Link
+                  href={`/dashboard/properties/${p.id}/edit`}
+                  className="text-blue-600 hover:underline"
+                >
                   Edit
                 </Link>
-                <button onClick={() => handleDelete(p.id)} className="text-red-600 hover:underline">
+                <button
+                  onClick={() => handleDelete(p.id)}
+                  className="text-red-600 hover:underline"
+                >
                   Delete
                 </button>
               </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
-  
 }
