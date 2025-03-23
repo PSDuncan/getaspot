@@ -1,55 +1,35 @@
-'use client';
+import type React from "react"
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { AuthProvider } from "@/contexts/auth-context"
+import { ThemeProvider } from "@/components/theme-provider"
 
-import './globals.css';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/superbase';
+const inter = Inter({ subsets: ["latin"] })
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const router = useRouter();
+export const metadata: Metadata = {
+  title: "GetASpot - South Africa's Premier Property Marketplace",
+  description:
+    "Find your perfect home in South Africa with GetASpot. Browse thousands of properties for sale and to rent across the country.",
+  keywords:
+    "property, real estate, South Africa, homes for sale, apartments for rent, property listings, estate agents",
+}
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setLoggedIn(!!session);
-    });
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setLoggedIn(!!session);
-    });
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-  };
-
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-        <header className="bg-white shadow-sm">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-            <Link href="/" className="text-xl font-bold text-blue-600">
-              GetASpot
-            </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href="/properties">Browse</Link>
-              <Link href="/add-property">Add Property</Link>
-              <Link href="/dashboard">Dashboard</Link>
-              {loggedIn ? (
-                <button onClick={handleLogout} className="text-red-600 hover:underline">Logout</button>
-              ) : (
-                <>
-                  <Link href="/login">Login</Link>
-                  <Link href="/signup">Sign Up</Link>
-                </>
-              )}
-            </nav>
-          </div>
-        </header>
-
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">{children}</main>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <AuthProvider>
+          <ThemeProvider attribute="class" defaultTheme="light">
+            {children}
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
-  );
+  )
 }
+

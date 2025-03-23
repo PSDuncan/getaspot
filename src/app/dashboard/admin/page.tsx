@@ -1,52 +1,50 @@
-'use client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdminStats } from "@/components/dashboard/admin-stats"
+import { AdminAgencies } from "@/components/dashboard/admin-agencies"
+import { AdminUsers } from "@/components/dashboard/admin-users"
+import { AdminProperties } from "@/components/dashboard/admin-properties"
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/superbase'; 
-
-export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    users: 0,
-    agencies: 0,
-    agents: 0,
-    properties: 0,
-  });
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      const users = await supabase.from('users').select('id');
-      const agencies = await supabase.from('agencies').select('id');
-      const agents = await supabase.from('agents').select('id');
-      const props = await supabase.from('properties').select('id');
-
-      setStats({
-        users: users.data?.length || 0,
-        agencies: agencies.data?.length || 0,
-        agents: agents.data?.length || 0,
-        properties: props.data?.length || 0,
-      });
-    };
-
-    fetchStats();
-  }, []);
-
+export default function AdminDashboardPage() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-        <Stat label="Users" value={stats.users} />
-        <Stat label="Agencies" value={stats.agencies} />
-        <Stat label="Agents" value={stats.agents} />
-        <Stat label="Properties" value={stats.properties} />
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <p className="text-muted-foreground">Platform overview and management</p>
       </div>
+
+      <AdminStats />
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="lg:col-span-4">
+          <CardHeader>
+            <CardTitle>Platform Properties</CardTitle>
+            <CardDescription>All properties listed on the platform</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AdminProperties />
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Registered Agencies</CardTitle>
+            <CardDescription>Agencies registered on the platform</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AdminAgencies />
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>User Management</CardTitle>
+          <CardDescription>Manage users across the platform</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AdminUsers />
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="bg-white border rounded p-4 shadow">
-      <p className="text-gray-500 text-sm">{label}</p>
-      <p className="text-2xl font-semibold">{value}</p>
-    </div>
-  );
-}
