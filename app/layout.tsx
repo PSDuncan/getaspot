@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import Script from "next/script"
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -85,6 +86,7 @@ export default function RootLayout({
       </head>
       <body className={`font-sans antialiased`}>
         {children}
+        <PWAInstallPrompt />
         <Analytics />
         <Script id="register-sw" strategy="afterInteractive">
           {`
@@ -93,6 +95,11 @@ export default function RootLayout({
                 navigator.serviceWorker.register('/sw.js')
                   .then((registration) => {
                     console.log('[PWA] Service Worker registered:', registration);
+                    
+                    // Check for updates periodically
+                    setInterval(() => {
+                      registration.update();
+                    }, 60000); // Check every minute
                   })
                   .catch((error) => {
                     console.log('[PWA] Service Worker registration failed:', error);
