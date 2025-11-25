@@ -2,20 +2,29 @@ import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { PropertyForm } from "@/components/dashboard/property-form"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 
-export default async function EditListingPage({ params }: { params: { id: string } }) {
+export default async function EditListingPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+
+  if (id === "new") {
+    redirect("/dashboard/listings/new")
+  }
+
   const supabase = await getSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: property } = await supabase
-    .from("properties")
-    .select("*")
-    .eq("id", params.id)
-    .eq("owner_id", user!.id)
-    .single()
+  if (!user) {
+    redirect("/auth/login")
+  }
+
+  const { data: property } = await supabase.from("properties").select("*").eq("id", id).eq("owner_id", user.id).single()
 
   if (!property) {
     notFound()
