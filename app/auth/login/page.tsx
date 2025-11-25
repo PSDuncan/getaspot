@@ -3,103 +3,119 @@
 import type React from "react"
 
 import { useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import { ArrowLeft } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const { signIn } = useAuth()
   const router = useRouter()
+  const supabase = getSupabaseBrowserClient()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
     setError(null)
 
-    try {
-      const { error } = await signIn(email, password)
-      if (error) throw error
-    } catch (error: any) {
-      setError(error.message || "Failed to sign in")
-    } finally {
-      setIsLoading(false)
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    } else {
+      router.push("/dashboard")
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Building className="h-6 w-6" />
-              <span className="font-bold text-xl">GetASpot</span>
-            </Link>
-          </div>
-          <CardTitle className="text-2xl font-bold">Sign in to your account</CardTitle>
-          <CardDescription>Enter your email and password to access your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                >
-                  Forgot password?
-                </Link>
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="p-4 border-b border-border">
+        <div className="container mx-auto">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to home
+          </Link>
+        </div>
+      </header>
+
+      <main className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 mb-4">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-xl">G</span>
               </div>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <span className="font-bold text-2xl text-foreground">GetASpot</span>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <div className="text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="font-medium text-primary underline-offset-4 hover:underline">
-              Sign up
-            </Link>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Welcome back</h1>
+            <p className="text-muted-foreground">Log in to your account to continue</p>
           </div>
-        </CardFooter>
-      </Card>
+
+          <div className="bg-card border border-border rounded-2xl p-8">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="mt-1.5"
+                />
+              </div>
+
+              {error && <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Logging in..." : "Log in"}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                Forgot your password?
+              </Link>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-border text-center">
+              <p className="text-sm text-muted-foreground">
+                Don't have an account?{" "}
+                <Link href="/auth/signup" className="text-primary font-medium hover:underline">
+                  Sign up
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   )
 }
-
