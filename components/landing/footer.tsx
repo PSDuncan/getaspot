@@ -70,7 +70,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/calculator" className="hover:text-foreground transition-colors">
+                <Link href="/tools/mortgage-calculator" className="hover:text-foreground transition-colors">
                   Mortgage Calculator
                 </Link>
               </li>
