@@ -1,13 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr"
-import type { SupabaseClient } from "@supabase/supabase-js"
 
-let clientInstance: SupabaseClient | null = null
-
-export function getSupabaseBrowserClient() {
-  if (clientInstance) {
-    return clientInstance
-  }
-
+export function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_gas_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_gas_SUPABASE_ANON_KEY
 
@@ -18,9 +11,8 @@ export function getSupabaseBrowserClient() {
     throw new Error("Missing Supabase configuration")
   }
 
-  clientInstance = createBrowserClient(supabaseUrl, supabaseAnonKey)
-  return clientInstance
+  return createBrowserClient(supabaseUrl, supabaseAnonKey)
 }
 
-// Alias for compatibility
-export const createClient = getSupabaseBrowserClient
+// Alias for compatibility with older code
+export const getSupabaseBrowserClient = createClient
