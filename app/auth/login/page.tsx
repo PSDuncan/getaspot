@@ -17,23 +17,40 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+
+  console.log("[v0] Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
+  console.log("[v0] Supabase Anon Key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+
   const supabase = getSupabaseBrowserClient()
+  console.log("[v0] Supabase client created:", !!supabase)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    console.log("[v0] Attempting login for email:", email)
 
-    if (error) {
-      setError(error.message)
+    try {
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      console.log("[v0] Login response:", { error, data })
+
+      if (error) {
+        console.error("[v0] Login error:", error)
+        setError(error.message)
+        setLoading(false)
+      } else {
+        console.log("[v0] Login successful, redirecting to dashboard")
+        router.push("/dashboard")
+      }
+    } catch (err) {
+      console.error("[v0] Login exception:", err)
+      setError("Failed to connect to authentication service. Please check your internet connection.")
       setLoading(false)
-    } else {
-      router.push("/dashboard")
     }
   }
 
