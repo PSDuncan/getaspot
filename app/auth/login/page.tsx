@@ -1,14 +1,13 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { ArrowLeft } from "lucide-react"
 
 export default function LoginPage() {
@@ -18,38 +17,25 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  console.log("[v0] Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
-  console.log("[v0] Supabase Anon Key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-
-  const supabase = getSupabaseBrowserClient()
-  console.log("[v0] Supabase client created:", !!supabase)
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    const supabase = createClient()
     setLoading(true)
     setError(null)
 
-    console.log("[v0] Attempting login for email:", email)
-
     try {
-      const { error, data } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: {
+          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
+        },
       })
-
-      console.log("[v0] Login response:", { error, data })
-
-      if (error) {
-        console.error("[v0] Login error:", error)
-        setError(error.message)
-        setLoading(false)
-      } else {
-        console.log("[v0] Login successful, redirecting to dashboard")
-        router.push("/dashboard")
-      }
-    } catch (err) {
-      console.error("[v0] Login exception:", err)
-      setError("Failed to connect to authentication service. Please check your internet connection.")
+      if (error) throw error
+      router.push("/dashboard")
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "An error occurred")
+    } finally {
       setLoading(false)
     }
   }
